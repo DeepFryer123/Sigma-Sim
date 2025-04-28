@@ -52,6 +52,37 @@
       border: none;
       padding: 5px;
     }
+    .color-picker-container {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #customColorPicker {
+      width: 30px;
+      height: 30px;
+      border: none;
+      padding: 0;
+      background: none;
+    }
+    .custom-color-option {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .species-button {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin: 0 5px;
+      cursor: pointer;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .species-button.selected {
+      border: 2px solid white;
+    }
   </style>
 </head>
 
@@ -67,6 +98,12 @@
     <button id="resetSim">Reset Simulation</button>
     <div>Cells: <span id="count">0</span></div>
     <div>Species: <span id="speciesCount">2</span></div>
+    
+    <div class="color-picker-container">
+      <label>Paint Species:</label>
+      <div id="speciesButtons"></div>
+    </div>
+    
     <div>Preset: 
       <select id="presetSelect">
         <option value="default">Default</option>
@@ -82,7 +119,6 @@
       <div class="species-control">
         <button id="addSpecies">Add Species</button>
         <button id="removeSpecies">Remove Species</button>
-        <div id="paintSpecies"></div>
       </div>
     </div>
   </div>
@@ -134,32 +170,9 @@
     const presetSelect = document.getElementById('presetSelect');
     const speciesCountEl = document.getElementById('speciesCount');
     const forceMatrixEl = document.getElementById('forceMatrix');
-    const paintSpeciesEl = document.getElementById('paintSpecies');
+    const speciesButtonsContainer = document.getElementById('speciesButtons');
     const addSpeciesBtn = document.getElementById('addSpecies');
     const removeSpeciesBtn = document.getElementById('removeSpecies');
-
-    // Initialize species matrix
-    function initForceMatrix(speciesCount) {
-      forceMatrix = [];
-      for (let i = 0; i < speciesCount; i++) {
-        forceMatrix[i] = [];
-        for (let j = 0; j < speciesCount; j++) {
-          // Default: neutral interaction
-          forceMatrix[i][j] = {
-            attraction: 0,
-            repulsion: 0,
-            equilibrium: 40,
-            maxDistance: 80,
-            delay: 0
-          };
-        }
-      }
-      updateForceMatrixUI();
-      updatePaintSpeciesUI();
-    }
-
-    // Initialize with 2 species
-    initForceMatrix(2);
 
     // Cell class with Ventrella concepts
     class Cell {
@@ -295,17 +308,18 @@
           });
         }
         
-        // Update trail
+        // Update trail - only if trails are enabled
         if (trailsEnabled) {
           this.trail.push({x: this.x, y: this.y});
           if (this.trail.length > 10) this.trail.shift();
-        } else {
+        } else if (this.trail.length > 0) {
+          // Clear trail if trails are disabled
           this.trail = [];
         }
       }
 
       draw() {
-        // Draw trail
+        // Draw trail only if trails are enabled and trail exists
         if (trailsEnabled && this.trail.length > 1) {
           ctx.beginPath();
           ctx.moveTo(this.trail[0].x, this.trail[0].y);
@@ -329,6 +343,26 @@
 
     let cells = [];
     
+    // Initialize force matrix
+    function initForceMatrix(speciesCount) {
+      forceMatrix = [];
+      for (let i = 0; i < speciesCount; i++) {
+        forceMatrix[i] = [];
+        for (let j = 0; j < speciesCount; j++) {
+          // Default: neutral interaction
+          forceMatrix[i][j] = {
+            attraction: 0,
+            repulsion: 0,
+            equilibrium: 40,
+            maxDistance: 80,
+            delay: 0
+          };
+        }
+      }
+      updateForceMatrixUI();
+      updateSpeciesButtons();
+    }
+
     // Initialize simulation
     function populateCells(count) {
       cells = [];
@@ -340,6 +374,130 @@
       }
       
       document.getElementById('count').textContent = cells.length;
+    }
+
+    // Update Species Buttons UI
+    function updateSpeciesButtons() {
+      speciesButtonsContainer.innerHTML = '';
+      
+      for (let i = 0; i < forceMatrix.length; i++) {
+        const button = document.createElement('div');
+        button.className = 'species-button' + (i === selectedSpecies ? ' selected' : '');
+        button.style.backgroundColor = SPECIES_COLORS[i];
+        button.dataset.species = i;
+        
+        button.addEventListener('click', function() {
+          selectedSpecies = parseInt(this.dataset.species);
+          updateSpeciesButtons();
+        });
+        
+        speciesButtonsContainer.appendChild(button);
+      }
+    }
+
+    // Update Force Matrix UI
+    function updateForceMatrixUI() {
+      forceMatrixEl.innerHTML = '';
+      
+      const table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      
+      const headerRow = document.createElement('tr');
+      headerRow.appendChild(document.createElement('th')); 
+      
+      for (let i = 0; i < forceMatrix.length; i++) {
+        const th = document.createElement('th');
+        th.style.padding = '2px';
+        th.style.textAlign = 'center';
+        
+        const speciesLabel = document.createElement('div');
+        speciesLabel.style.width = '15px';
+        speciesLabel.style.height = '15px';
+        speciesLabel.style.borderRadius = '50%';
+        speciesLabel.style.backgroundColor = SPECIES_COLORS[i];
+        speciesLabel.style.margin = '0 auto';
+        
+        th.appendChild(speciesLabel);
+        headerRow.appendChild(th);
+      }
+      
+      table.appendChild(headerRow);
+      
+      for (let i = 0; i < forceMatrix.length; i++) {
+        const row = document.createElement('tr');
+        
+        const rowHeader = document.createElement('th');
+        rowHeader.style.padding = '2px';
+        
+        const speciesLabel = document.createElement('div');
+        speciesLabel.style.width = '15px';
+        speciesLabel.style.height = '15px';
+        speciesLabel.style.borderRadius = '50%';
+        speciesLabel.style.backgroundColor = SPECIES_COLORS[i];
+        
+        rowHeader.appendChild(speciesLabel);
+        row.appendChild(rowHeader);
+        
+        for (let j = 0; j < forceMatrix.length; j++) {
+          const cell = document.createElement('td');
+          cell.style.padding = '2px';
+          cell.style.border = '1px solid #444';
+          
+          const params = forceMatrix[i][j];
+          
+          const attractionLabel = document.createElement('div');
+          attractionLabel.textContent = 'Attraction: ' + params.attraction;
+          
+          const attractionSlider = document.createElement('input');
+          attractionSlider.type = 'range';
+          attractionSlider.min = 0;
+          attractionSlider.max = 100;
+          attractionSlider.value = params.attraction;
+          attractionSlider.addEventListener('input', (e) => {
+            params.attraction = parseInt(e.target.value);
+            attractionLabel.textContent = 'Attraction: ' + params.attraction;
+          });
+          
+          const repulsionLabel = document.createElement('div');
+          repulsionLabel.textContent = 'Repulsion: ' + params.repulsion;
+          
+          const repulsionSlider = document.createElement('input');
+          repulsionSlider.type = 'range';
+          repulsionSlider.min = 0;
+          repulsionSlider.max = 100;
+          repulsionSlider.value = params.repulsion;
+          repulsionSlider.addEventListener('input', (e) => {
+            params.repulsion = parseInt(e.target.value);
+            repulsionLabel.textContent = 'Repulsion: ' + params.repulsion;
+          });
+
+          const delayLabel = document.createElement('div');
+          delayLabel.textContent = 'Delay: ' + params.delay;
+          
+          const delaySlider = document.createElement('input');
+          delaySlider.type = 'range';
+          delaySlider.min = 0;
+          delaySlider.max = 5;
+          delaySlider.value = params.delay;
+          delaySlider.addEventListener('input', (e) => {
+            params.delay = parseInt(e.target.value);
+            delayLabel.textContent = 'Delay: ' + params.delay;
+          });
+          
+          cell.appendChild(attractionLabel);
+          cell.appendChild(attractionSlider);
+          cell.appendChild(repulsionLabel);
+          cell.appendChild(repulsionSlider);
+          cell.appendChild(delayLabel);
+          cell.appendChild(delaySlider);
+          
+          row.appendChild(cell);
+        }
+        
+        table.appendChild(row);
+      }
+      
+      forceMatrixEl.appendChild(table);
     }
 
     // Event handlers
@@ -373,6 +531,13 @@
     toggleTrailBtn.addEventListener('click', () => {
       trailsEnabled = !trailsEnabled;
       toggleTrailBtn.textContent = `Trail: ${trailsEnabled ? "ON" : "OFF"}`;
+      
+      // Clear all trails immediately when turned off
+      if (!trailsEnabled) {
+        cells.forEach(cell => {
+          cell.trail = [];
+        });
+      }
     });
 
     toggleCollisionBtn.addEventListener('click', () => {
@@ -414,7 +579,7 @@
         }
         speciesCountEl.textContent = forceMatrix.length;
         updateForceMatrixUI();
-        updatePaintSpeciesUI();
+        updateSpeciesButtons();
       }
     });
 
@@ -438,7 +603,7 @@
         
         speciesCountEl.textContent = forceMatrix.length;
         updateForceMatrixUI();
-        updatePaintSpeciesUI();
+        updateSpeciesButtons();
       }
     });
 
@@ -556,133 +721,8 @@
       }
       
       updateForceMatrixUI();
+      updateSpeciesButtons();
       populateCells(200);
-    }
-
-    function updateForceMatrixUI() {
-      forceMatrixEl.innerHTML = '';
-      
-      const table = document.createElement('table');
-      table.style.borderCollapse = 'collapse';
-      
-      const headerRow = document.createElement('tr');
-      headerRow.appendChild(document.createElement('th')); 
-      
-      for (let i = 0; i < forceMatrix.length; i++) {
-        const th = document.createElement('th');
-        th.style.padding = '2px';
-        th.style.textAlign = 'center';
-        
-        const speciesLabel = document.createElement('div');
-        speciesLabel.style.width = '15px';
-        speciesLabel.style.height = '15px';
-        speciesLabel.style.borderRadius = '50%';
-        speciesLabel.style.backgroundColor = SPECIES_COLORS[i];
-        speciesLabel.style.margin = '0 auto';
-        
-        th.appendChild(speciesLabel);
-        headerRow.appendChild(th);
-      }
-      
-      table.appendChild(headerRow);
-      
-      for (let i = 0; i < forceMatrix.length; i++) {
-        const row = document.createElement('tr');
-        
-        const rowHeader = document.createElement('th');
-        rowHeader.style.padding = '2px';
-        
-        const speciesLabel = document.createElement('div');
-        speciesLabel.style.width = '15px';
-        speciesLabel.style.height = '15px';
-        speciesLabel.style.borderRadius = '50%';
-        speciesLabel.style.backgroundColor = SPECIES_COLORS[i];
-        
-        rowHeader.appendChild(speciesLabel);
-        row.appendChild(rowHeader);
-        
-        for (let j = 0; j < forceMatrix.length; j++) {
-          const cell = document.createElement('td');
-          cell.style.padding = '2px';
-          cell.style.border = '1px solid #444';
-          
-          const params = forceMatrix[i][j];
-          
-          const attractionLabel = document.createElement('div');
-          attractionLabel.textContent = 'Attraction: ' + params.attraction;
-          
-          const attractionSlider = document.createElement('input');
-          attractionSlider.type = 'range';
-          attractionSlider.min = 0;
-          attractionSlider.max = 100;
-          attractionSlider.value = params.attraction;
-          attractionSlider.addEventListener('input', (e) => {
-            params.attraction = parseInt(e.target.value);
-            attractionLabel.textContent = 'Attraction: ' + params.attraction;
-          });
-          
-          const repulsionLabel = document.createElement('div');
-          repulsionLabel.textContent = 'Repulsion: ' + params.repulsion;
-          
-          const repulsionSlider = document.createElement('input');
-          repulsionSlider.type = 'range';
-          repulsionSlider.min = 0;
-          repulsionSlider.max = 100;
-          repulsionSlider.value = params.repulsion;
-          repulsionSlider.addEventListener('input', (e) => {
-            params.repulsion = parseInt(e.target.value);
-            repulsionLabel.textContent = 'Repulsion: ' + params.repulsion;
-          });
-
-          const delayLabel = document.createElement('div');
-          delayLabel.textContent = 'Delay: ' + params.delay;
-          
-          const delaySlider = document.createElement('input');
-          delaySlider.type = 'range';
-          delaySlider.min = 0;
-          delaySlider.max = 5;
-          delaySlider.value = params.delay;
-          delaySlider.addEventListener('input', (e) => {
-            params.delay = parseInt(e.target.value);
-            delayLabel.textContent = 'Delay: ' + params.delay;
-          });
-          
-          cell.appendChild(attractionLabel);
-          cell.appendChild(attractionSlider);
-          cell.appendChild(repulsionLabel);
-          cell.appendChild(repulsionSlider);
-          cell.appendChild(delayLabel);
-          cell.appendChild(delaySlider);
-          
-          row.appendChild(cell);
-        }
-        
-        table.appendChild(row);
-      }
-      
-      forceMatrixEl.appendChild(table);
-    }
-
-    function updatePaintSpeciesUI() {
-      paintSpeciesEl.innerHTML = '';
-      paintSpeciesEl.textContent = 'Paint Species: ';
-      
-      for (let i = 0; i < forceMatrix.length; i++) {
-        const speciesBtn = document.createElement('button');
-        speciesBtn.style.backgroundColor = SPECIES_COLORS[i];
-        speciesBtn.style.width = '20px';
-        speciesBtn.style.height = '20px';
-        speciesBtn.style.borderRadius = '50%';
-        speciesBtn.style.margin = '0 5px';
-        speciesBtn.style.border = i === selectedSpecies ? '2px solid white' : 'none';
-        
-        speciesBtn.addEventListener('click', () => {
-          selectedSpecies = i;
-          updatePaintSpeciesUI();
-        });
-        
-        paintSpeciesEl.appendChild(speciesBtn);
-      }
     }
 
     function handleMouseEvent(event) {
@@ -695,15 +735,9 @@
       }
 
       if (erasing) {
-        const erasedCells = cells.filter(cell => {
-          const dist = Math.hypot(cell.x - x, cell.y - y);
-          return dist <= 20; // Erase radius
-        });
-        
-        
         cells = cells.filter(cell => {
           const dist = Math.hypot(cell.x - x, cell.y - y);
-          return dist > 20;
+          return dist > 20; // Erase radius
         });
         
         document.getElementById('count').textContent = cells.length;
@@ -719,6 +753,7 @@
     canvas.addEventListener('mousedown', handleMouseEvent);
 
     function update() {
+      // Clear the canvas with a semi-transparent black rectangle
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -726,20 +761,28 @@
         cells = cells.slice(0, MAX_CELLS);
       }
       
-      // Update 
+      // Update cells
       cells.forEach(cell => cell.update(cells));
       
-      // Draw 
+      // Draw cells
       cells.forEach(cell => cell.draw());
       
       document.getElementById('count').textContent = cells.length;
     }
 
     function loop() {
-      if (!paused) update();
+      update();
       requestAnimationFrame(loop);
     }
 
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // Initialize
+    initForceMatrix(2);
     applyPreset('default');
     loop();
   };
