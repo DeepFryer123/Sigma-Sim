@@ -93,6 +93,7 @@
     <button id="paint">🎨 Paint</button>
     <button id="erase">🧹 Erase</button>
     <button id="toggleTrail">Trail: ON</button>
+    <button id="toggleBlur">Motion Blur: ON</button>
     <button id="toggleCollision">Collision: ON</button>
     <button id="toggleAdvanced">Advanced Settings</button>
     <button id="resetSim">Reset Simulation</button>
@@ -134,12 +135,14 @@
     const BASE_SPEED = 1.5;
     const MAX_FORCE = 2;
     const MAX_CELLS = 2000;
+    const BLUR_ALPHA = 0.1; // Alpha value for motion blur effect
     
     // Simulation state
     let paused = false;
     let painting = false;
     let erasing = false;
     let trailsEnabled = true;
+    let blurEnabled = true;
     let collisionsEnabled = true;
     let advancedMode = false;
     let selectedSpecies = 0;
@@ -163,6 +166,7 @@
     const paintBtn = document.getElementById('paint');
     const eraseBtn = document.getElementById('erase');
     const toggleTrailBtn = document.getElementById('toggleTrail');
+    const toggleBlurBtn = document.getElementById('toggleBlur');
     const toggleCollisionBtn = document.getElementById('toggleCollision');
     const toggleAdvancedBtn = document.getElementById('toggleAdvanced');
     const resetSimBtn = document.getElementById('resetSim');
@@ -540,6 +544,11 @@
       }
     });
 
+    toggleBlurBtn.addEventListener('click', () => {
+      blurEnabled = !blurEnabled;
+      toggleBlurBtn.textContent = `Motion Blur: ${blurEnabled ? "ON" : "OFF"}`;
+    });
+
     toggleCollisionBtn.addEventListener('click', () => {
       collisionsEnabled = !collisionsEnabled;
       toggleCollisionBtn.textContent = `Collision: ${collisionsEnabled ? "ON" : "OFF"}`;
@@ -753,9 +762,14 @@
     canvas.addEventListener('mousedown', handleMouseEvent);
 
     function update() {
-      // Clear the canvas with a semi-transparent black rectangle
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (blurEnabled) {
+        // Apply motion blur effect by using alpha
+        ctx.fillStyle = `rgba(0, 0, 0, ${BLUR_ALPHA})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        // No blur effect - clear the canvas completely
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
 
       if (cells.length > MAX_CELLS) {
         cells = cells.slice(0, MAX_CELLS);
