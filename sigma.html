@@ -135,7 +135,7 @@
     const BASE_SPEED = 1.5;
     const MAX_FORCE = 2;
     const MAX_CELLS = 2000;
-    const BLUR_ALPHA = 0.1; // Alpha value for motion blur effect
+    const BLUR = 0.1; // Alpha value for motion blur effect
     
     // Simulation state
     let paused = false;
@@ -157,7 +157,7 @@
       "#FF00FF"  // magenta
     ];
 
-    // Matrix of species interactions
+    //  interactions
     // [species1][species2] = {attraction, repulsion, equilibrium, maxDistance, delay}
     let forceMatrix = [];
     
@@ -178,7 +178,7 @@
     const addSpeciesBtn = document.getElementById('addSpecies');
     const removeSpeciesBtn = document.getElementById('removeSpecies');
 
-    // Cell class with Ventrella concepts
+    // Cell/particle
     class Cell {
       constructor(x = Math.random() * canvas.width, y = Math.random() * canvas.height, species = 0) {
         this.x = x;
@@ -234,7 +234,7 @@
             const fx = dx / dist;
             const fy = dy / dist;
             
-            // Calculate force magnitude
+            // Calc magnitude
             let forceMag = 0;
             
             // Repulsion (close range)
@@ -764,7 +764,7 @@
     function update() {
       if (blurEnabled) {
         // Apply motion blur effect by using alpha
-        ctx.fillStyle = `rgba(0, 0, 0, ${BLUR_ALPHA})`;
+        ctx.fillStyle = `rgba(0, 0, 0, ${BLUR})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else {
         // No blur effect - clear the canvas completely
