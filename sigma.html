@@ -637,18 +637,18 @@
           
         case 'cells':
           initForceMatrix(3);
-          // Cell membrane (species 0)
+         
           forceMatrix[0][0].attraction = 50;
           forceMatrix[0][0].repulsion = 100;
           forceMatrix[0][0].equilibrium = 20;
-          // Nucleus (species 1)
+        
           forceMatrix[1][1].attraction = 80;
           forceMatrix[1][1].repulsion = 120;
           forceMatrix[1][1].equilibrium = 15;
-          // Cytoplasm (species 2)
+         
           forceMatrix[2][2].attraction = 20;
           forceMatrix[2][2].repulsion = 40;
-          // Interactions
+       
           forceMatrix[0][1].repulsion = 50;
           forceMatrix[1][0].repulsion = 50;
           forceMatrix[0][2].attraction = 30;
